@@ -165,27 +165,14 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
     });
 
     view.ui.add(sketch, "top-right");
-
-    // Add sketch events to listen for and execute query
-    sketch.on("update", (event) => {
-        //console.log(event.state);
-        // Create
-        if (event.state === "start") {
-            //queryFeaturelayer(event.graphics[0].geometry);
-            //console.log(graphicsLayerSketch.graphics);
-            let polygonsToJoin = [];
-            event.graphics.forEach((gr)=>{
-                console.log(gr.geometry.type);
-                console.log(graphicsLayerSketch);
-                if (gr.geometry.type === "polygon"){
-                    polygonsToJoin.push(gr.geometry);
-                }
-            });
-            console.log(polygonsToJoin);
-            const joinButton = document.getElementById("joinButton");
-            joinButton.addEventListener("click", ()=>{
-                geometryEngineAsync.union(polygonsToJoin).then((apvienotaBuferzona)=>{
-                    polygonsToJoin = [];
+    
+    //JOIN shapes using button
+    const joinButton = document.getElementById("joinButton");
+    const joinShapesEnable = function(array){
+        joinButton.addEventListener("click", ()=>{
+            if (array.length > 1){
+                geometryEngineAsync.union(array).then((apvienotaBuferzona)=>{
+                    array = [];
                     const bufSymbol = {
                         type: "simple-fill", // autocasts as new SimpleFillSymbol()
                         color: [227, 139, 79, 0.8],
@@ -201,15 +188,39 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
                           symbol: bufSymbol
                         })
                     );
-                    console.log(mainDrawingLayer);
+
                 }).catch((e)=>{
                     console.log(e);
                 });
+            } else {
+            console.log("vienu figūru nevar apvienot");
+            }
+        });
+    }
+    
+    // Add sketch events to listen for and execute query
+    sketch.on("update", (event) => {
+        //console.log(event.state);
+        // Create
+        if (event.state === "start") {
+            //queryFeaturelayer(event.graphics[0].geometry);
+            //console.log(graphicsLayerSketch.graphics);
+            let polygonsToJoin = [];
+            event.graphics.forEach((gr)=>{
+                //console.log(gr.geometry.rings[0][0]);
+                if (gr.geometry.type === "polygon"){
+                    polygonsToJoin.push(gr.geometry);
+                }
             });
+            if (polygonsToJoin.length > 1){
+                joinShapesEnable(polygonsToJoin);
+            }
         }
-        // if (event.state === "complete"){
-        //     graphicsLayerSketch.remove(event.graphics[0]); // Clear the graphic when a user clicks off of it or sketches new one
-        // }
+        if (event.state === "complete"){
+            //graphicsLayerSketch.remove(event.graphics[0]); // Clear the graphic when a user clicks off of it or sketches new one
+            console.log("completed");
+            //event.graphics = [];
+        }
         // Change
         if (event.toolEventInfo && (event.toolEventInfo.type === "scale-stop" || event.toolEventInfo.type === "reshape-stop" || event.toolEventInfo.type === "move-stop")) {
             //queryFeaturelayer(event.graphics[0].geometry);
