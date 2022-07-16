@@ -1,0 +1,81 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Atzīmē buferzonas apsekojumus</title>
+
+    <style>
+      table {
+        table-layout: fixed;
+        width: 100%;
+        height: 100%
+            }
+
+      td {
+        vertical-align: top;
+
+        overflow: auto;
+        }
+
+      #maprow {
+        height: 75vh;
+      }
+
+      #listDiv, #listDiv2, #listDiv3 {
+        height: 40vh;
+        overflow-y: scroll;
+      }
+
+      #forMap {
+        width: 75%
+      }
+
+      #viewDiv {
+        height: 100vh;
+        width: 75vw;
+        }
+
+      #labojumi {
+        position: fixed;
+        width:400px;
+        right: 20px;
+        background:rgb(83, 136, 139);
+        z-index: 100;
+      }
+    </style>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.24/"></script>
+  </head>
+  <body>
+
+  <table>
+    <tr>
+      <td id="forMap" rowspan="2">
+        <div id="viewDiv"></div>
+      </td>
+      <td>
+        <div>
+          <h1 id="virsraksts1">Te varētu būt kaut kas </h1>
+          <button type="button" id = "joinButton">Apvienot buf</button>
+          <button type="button">Vēl kaut kāda poga</button>
+        </div>
+      </td>
+    </tr>
+    <tr>
+
+      <td>
+        <div>
+          <div id="layerListContainer"></div>
+          <div id="measureDiv"></div>
+          <h1 id="virsraksts2">Arī te varētu būt kaut kas</h1>
+          <button type="button" >Poga</button>
+          <button type="button" >Poga</button>
+          <button type="button">Poga</button>
+        </div>
+      </td>
+    </tr>
+    
+  </table>
+    <script src="script.js"></script>
+  </body>
+</html>
