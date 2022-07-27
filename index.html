@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
@@ -18,29 +19,100 @@
         }
 
       #maprow {
-        height: 75vh;
+        height: 85vh;
       }
 
-      #listDiv, #listDiv2, #listDiv3 {
-        height: 40vh;
-        overflow-y: scroll;
-      }
 
       #forMap {
-        width: 75%
+        width: 79%
       }
 
       #viewDiv {
         height: 100vh;
-        width: 75vw;
-        }
+        width: 79vw;
+      }
 
-      #labojumi {
-        position: fixed;
-        width:400px;
-        right: 20px;
-        background:rgb(83, 136, 139);
-        z-index: 100;
+      #tableDiv {
+        height: 50vh;
+        width: 100vw;
+      }
+
+      #tableDiv2 {
+        height: 50vh;
+        width: 100vw;
+      }
+
+      /* The switch - the box around the slider */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+      }
+
+      /* Hide default HTML checkbox */
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      /* The slider */
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        -webkit-transition: .4s;
+        transition: .4s;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        -webkit-transition: .4s;
+        transition: .4s;
+      }
+
+      input:checked + .slider {
+        background-color: #2196F3;
+      }
+
+      input:focus + .slider {
+        box-shadow: 0 0 1px #2196F3;
+      }
+
+      input:checked + .slider:before {
+        -webkit-transform: translateX(26px);
+        -ms-transform: translateX(26px);
+        transform: translateX(26px);
+      }
+
+      /* Rounded sliders */
+      .slider.round {
+        border-radius: 34px;
+      }
+
+      .slider.round:before {
+        border-radius: 50%;
+      }
+
+      .sstrong {
+        font-size:larger;
+        color: red;
+        font-weight: bold;
+      }
+
+      .esri-editor .esri-item-list__scroller {
+        max-height: 350px;
       }
     </style>
     <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css">
@@ -52,28 +124,48 @@
     <tr>
       <td id="forMap" rowspan="2">
         <div id="viewDiv"></div>
+        <div id="info" class="esri-widget">
       </td>
       <td>
         <div>
-          <h1 id="virsraksts1">Te varētu būt kaut kas </h1>
-          <button type="button" id = "joinButton">Apvienot buf</button>
-          <button type="button">Vēl kaut kāda poga</button>
+          <h2 id="virsraksts1">Sveiki! </h2>
+        </div>
+        <div>
+          <label class="switch">
+            <input type="checkbox" id ="bufSwitch">
+            <span class="slider"></span>
+          </label>
+          <p>
+            <span id="parasts" class="sstrong">| Atzīmēt apsekojumus |</span>
+          </p>
+          <p>
+           <span id="specialais">| Zīmēt buferzonu |</span>
+          </p>
+        </div>
+        <div id="buttonDiv" style="display:none">  
+          <button type="button" id = "bzMarkButton">Iezīmēt vienu</button>
+          <button type="button" id = "joinButton">Apvienot un iez</button>
+          <button type="button" id = "saveButton">Saglabāt</button>
         </div>
       </td>
     </tr>
     <tr>
-
       <td>
+        <div id="layerListContainer"></div>
         <div>
-          <div id="layerListContainer"></div>
-          <div id="measureDiv"></div>
-          <h1 id="virsraksts2">Arī te varētu būt kaut kas</h1>
-          <button type="button" >Poga</button>
-          <button type="button" >Poga</button>
-          <button type="button">Poga</button>
+          <button type="button" id="pasleptMeritaju">Aizvākt mērītāju</button>
+          <button type="button" id="mainitTabulas">Pārslēgt tabulas</button>
         </div>
+        <div id="measureDiv"></div>
       </td>
     </tr>
+    <tr>
+      <td colspan="2">
+        <div id="tableDiv"></div>
+        <div id="tableDiv2"></div>
+      </td>
+    </tr>
+
     
   </table>
     <script src="script.js"></script>

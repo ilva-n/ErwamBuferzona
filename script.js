@@ -8,12 +8,24 @@ require(["esri/config",
 "esri/widgets/CoordinateConversion",
 "esri/widgets/Measurement", 
 "esri/geometry/geometryEngineAsync",
-"esri/Graphic"], 
+"esri/Graphic",
+"esri/widgets/Editor",
+"esri/widgets/Expand",
+"esri/widgets/FeatureTable"], 
 function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerList, 
-    CoordinateConversion, Measurement, geometryEngineAsync, Graphic) {
+    CoordinateConversion, Measurement, geometryEngineAsync, Graphic, Editor, Expand, FeatureTable) {
     
     esriConfig.apiKey = "AAPKc6d3103f93ba45899206b019b686405bSdAz10q6A7j-RFC6kl6u4Uor2ADR2Nf5ytv-jRE0mGW9W9zP5UscUzYTL28efgHv";
-    
+    let zimetBuferzonu = false;
+    let polygonsToJoin = [];
+    const bufSwitch = document.getElementById("bufSwitch");
+    bufSwitch.addEventListener("change", ()=>{
+        zimetBuferzonu === true ? zimetBuferzonu = false : zimetBuferzonu = true;
+        applySwitch();
+    });
+
+    const saveButton = document.getElementById("saveButton");
+    const pasleptMeritajuButton = document.getElementById("pasleptMeritaju");
     const labelClass = {
         // autocasts as new LabelClass()
         symbol: {
@@ -31,6 +43,82 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
           expression: "$feature.NOSAUKUMS"
         }
     };
+
+    const editThisAction = {
+        title: "Labot šo buferzonu",
+        id: "edit-this",
+        className: "esri-icon-edit"
+    };
+       // Create a popupTemplate for the featurelayer and pass in a function to set its content and specify an action to handle editing the selected feature
+    
+    const template = {
+        title: "Buferzona",
+        content: [
+            {
+              type: "fields",
+              fieldInfos: [
+                {
+                  fieldName: "nosaukums"
+                },
+                {
+                  fieldName: "gads"
+                },
+                {
+                  fieldName: "OBJECTID"
+                }
+              ]
+            }
+          ],
+        actions: [editThisAction]
+    };
+
+    const apsTemplate = {
+        title: "Apsekojums",
+        content: [
+            {
+              type: "fields",
+              fieldInfos: [
+                {
+                  fieldName: "inspektors"
+                },
+                {
+                  fieldName: "gads"
+                },
+                {
+                fieldName: "aktanr"
+                },
+                {
+                  fieldName: "OBJECTID"
+                }
+              ]
+            }
+          ],
+    };
+
+    const parTemplate = {
+        title: "Pozitīvais paraugs",
+        content: [
+            {
+              type: "fields",
+              fieldInfos: [
+                {
+                  fieldName: "augasuga"
+                },
+                {
+                  fieldName: "gads"
+                },
+                {
+                  fieldName: "aktanr"
+                },
+                {
+                  fieldName: "OBJECTID"
+                }
+              ]
+            }
+          ],
+    };
+
+    let bzEditor, features, pointEditorExpand, tableExpand;
     const layerListContainer = document.getElementById("layerListContainer");
     const measureDiv = document.getElementById("measureDiv");
 
@@ -77,8 +165,69 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
         visible: false
     });
 
+    // styles for buferzonas layer
+    const bzRenderer = {
+        type: "simple",  // autocasts as new SimpleRenderer()
+        symbol: {
+          type: "simple-fill",  // autocasts as new SimpleFillSymbol()
+          color: [ 255, 128, 0, 0.2 ],
+          outline: {  // autocasts as new SimpleLineSymbol()
+            width: 2,
+            color: "red"
+          }
+        }
+    };
     const buferzonas = new FeatureLayer({
-        url: "https://services1.arcgis.com/3dWrAGXGF8L1iW48/arcgis/rest/services/buferzonas/FeatureServer/0"
+        url: "https://services1.arcgis.com/3dWrAGXGF8L1iW48/arcgis/rest/services/buferzonas/FeatureServer/0",
+        renderer: bzRenderer,
+        outFields: ["*"],
+        popupTemplate: template
+    });
+
+    // apsekojumi 
+    const apsRenderer = {
+        type: "simple",  // autocasts as new SimpleRenderer()
+        symbol: {
+          type: "simple-marker",  // autocasts as new SimpleMarkerSymbol()
+          size: 7,
+          color: "blue",
+          outline: {  // autocasts as new SimpleLineSymbol()
+            width: 1,
+            color: "white"
+          }
+        },
+        label: "apsekojums"
+    };
+
+    const apsekojumi = new FeatureLayer({
+        url: "https://services1.arcgis.com/3dWrAGXGF8L1iW48/arcgis/rest/services/apsekojumiparaugi/FeatureServer/0",
+        renderer: apsRenderer,
+        outFields: ["*"],
+        popupTemplate: apsTemplate,
+        title: "Apsekojumi"
+    });
+
+    //paraugi
+    const parRenderer = {
+        type: "simple",  // autocasts as new SimpleRenderer()
+        symbol: {
+          type: "simple-marker",  // autocasts as new SimpleMarkerSymbol()
+          size: 7,
+          color: "red",
+          outline: {  // autocasts as new SimpleLineSymbol()
+            width: 1,
+            color: "black"
+          }
+        },
+        label: "paraugs"
+    };   
+
+    const paraugi = new FeatureLayer({
+        url: "https://services1.arcgis.com/3dWrAGXGF8L1iW48/arcgis/rest/services/apsekojumiparaugi/FeatureServer/1",
+        renderer: parRenderer,
+        outFields: ["*"],
+        title: "Pozitīvie paraugi",
+        popupTemplate: parTemplate
     });
 
     //MAP
@@ -88,11 +237,80 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
       layers: [ekas, mazciemi, autoceli, ielas, ciemi, pagasti, novadi]
     });
      
+    // add buferzonas layer
+    map.add(buferzonas);
+    map.add(apsekojumi);
+    map.add(paraugi);
+
+    // for survey/sample editor
+    const apsInfos = {
+        layer: apsekojumi,
+        formTemplate: {
+          // autocasts to FormTemplate
+          elements: [
+            {
+              // autocasts to Field Elements
+              type: "field",
+              fieldName: "OBJECTID",
+              label: "OBJECTID",
+              editable: false
+            },
+            {
+              type: "field",
+              fieldName: "inspektors",
+              label: "inspektors"
+            },
+            {
+              type: "field",
+              fieldName: "aktanr",
+              label: "Akta numurs"
+            },
+            {
+              type: "field",
+              fieldName: "gads",
+              label: "gads"
+            }
+          ]
+        }
+    };
+    
+    const parInfos = {
+        layer: paraugi,
+        label: "pozitīvie paraugi",
+        formTemplate: {
+          // autocasts to FormTemplate
+          elements: [
+            {
+              // autocasts to Field Elements
+              type: "field",
+              fieldName: "OBJECTID",
+              label: "OBJECTID",
+              editable: false
+            },
+            {
+              type: "field",
+              fieldName: "augasuga",
+              label: "auga suga"
+            },
+            {
+              type: "field",
+              fieldName: "aktanr",
+              label: "Akta numurs"
+            },
+            {
+              type: "field",
+              fieldName: "gads",
+              label: "gads"
+            }
+          ]
+        }
+    };
+    
     //VIEW
     const view = new MapView({
         map: map,
-        center: [21.114408, 56.4285096], // Longitude, latitude 
-        zoom: 13, // Zoom level
+        center: [24.399389, 56.902410], // Longitude, latitude 
+        zoom: 8, // Zoom level
         container: "viewDiv" // Div element
     });
     //COORDINATE WIDGET
@@ -107,8 +325,13 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
         activeTool: "distance",
         container: measureDiv
     });
-      
+
     //view.ui.add(measurement, "bottom-right");
+    pasleptMeritajuButton.addEventListener("click", ()=>{
+        if (measurement){
+            measurement.clear()
+        }
+    });
 
     //funkcijas priekš LayerList
     function defineActions(event) {
@@ -149,7 +372,168 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
           //console.log(layerList.operationalItems.items);
           // Add widget to the top right corner of the view
           //view.ui.add(layerList, "manual"); ja ir šis, tad vidžets ir virsū uz "view"
+        
+        // Create the Editor with the specified layer and a list of field configurations
+        bzEditor = new Editor({
+            view: view,
+            container: document.createElement("div"),
+            layerInfos: [{
+                view: view,
+                layer: buferzonas,                
+                formTemplate: { // autocasts to FormTemplate
+                    elements: [
+                    // autocasts to FieldElement
+                    {
+                        type: "field",
+                        fieldName: "Nosaukums",
+                        label: "Nosaukums"
+                    },
+                    {
+                        type: "field",
+                        fieldName: "gads",
+                        label: "gads"
+                    },
+                    {
+                        type: "field",
+                        fieldName: "OBJECTID",
+                        label: "id",
+                        editable: false
+                    }
+                    ]
+                },
+                addEnabled: false
+            }]
+        });
+
+
+          // Execute each time the "Edit feature" action is clicked
+        function editThis() {
+            // If the EditorViewModel's activeWorkflow is null, make the popup not visible
+            if (!bzEditor.viewModel.activeWorkFlow) {
+                view.popup.visible = false;
+                // Call the Editor update feature edit workflow
+                bzEditor.startUpdateWorkflowAtFeatureEdit(view.popup.selectedFeature);
+                view.ui.add(bzEditor, "top-right");
+                view.popup.spinnerEnabled = false;
+            }
+            // We need to set a timeout to ensure the editor widget is fully rendered. We
+            // then grab it from the DOM stack
+            setTimeout(() => {
+                // Use the editor's back button as a way to cancel out of editing
+                const shadowLine1 = bzEditor.domNode.getElementsByTagName("calcite-panel")[1];
+                const root1 = shadowLine1.shadowRoot;
+                let backButtn = root1.querySelectorAll(".back-button")[0];
+                // Add a tooltip for the back button
+                backButtn.setAttribute(
+                    "title",
+                    "Cancel edits, return to popup"
+                );
+                // Add a listener to listen for when the editor's back button is clicked
+                backButtn.addEventListener("click", (evt) => {
+                    // Prevent the default behavior for the back button and instead remove the editor and reopen the popup
+                    evt.preventDefault();
+                    view.ui.remove(bzEditor);
+                    view.popup.open({
+                    features: features
+                    });
+                });        
+            }, 750); // ar isaku taimautu isti nepietiek
+        }
+
+        
+        // Event handler that fires each time an action is clicked
+        view.popup.on("trigger-action", (event) => {
+            if (event.action.id === "edit-this") {
+                editThis();
+            }
+        });
+
+        const pointEditor = new Editor({
+            container: document.createElement("div"),
+            view: view,
+            layerInfos: [apsInfos, parInfos, {layer: buferzonas, enabled: false}]
+        });
+
+        // šo vajag paskatīties vai vajag. Varbūt var samierināties ar "New feature"
+        pointEditor.viewModel.watch('state', function(state){
+            if(state === 'ready'){
+              setTimeout(function(){
+				let bb = document.getElementsByClassName("esri-item-list__group");
+                //console.log(bb);
+                bb[0].lastChild.label = "Pozitīvais paraugs";
+                bb[1].lastChild.label = "Apsekojums"
+              }, 700);
+            }
+        }); // šei tā daļa beidzas
+
+        pointEditorExpand = new Expand({
+            view: view,
+            content: pointEditor
+        });
+          
+        // Add the widget to the view
+        view.ui.add(pointEditorExpand, "top-left");
+
+        const featureTable1 = new FeatureTable({
+            view: view, // The view property must be set for the select/highlight to work
+            layer: paraugi,
+            container: document.getElementById("tableDiv"),
+            visible: false
+        });
+
+        const featureTable2 = new FeatureTable({
+            view: view, // The view property must be set for the select/highlight to work
+            layer: apsekojumi,
+            container: document.getElementById("tableDiv2")
+        });
+        const changeTables = function(){
+            if(featureTable1.visible === false){
+                featureTable1.visible = true;
+                featureTable2.visible = false;
+            } else {
+                featureTable1.visible = false;
+                featureTable2.visible = true;
+            }
+        }
+        document.getElementById("mainitTabulas").addEventListener("click", changeTables);
     });
+    
+    // Watch when the popup is visible
+    view.popup.watch("visible", (event) => {
+        // Check the Editor's viewModel state, if it is currently open and editing existing features, disable popups
+        if (bzEditor.viewModel.state === "editing-existing-feature") {
+            view.popup.close();
+        } else {
+            // Grab the features of the popup
+            features = view.popup.features;
+        }
+    });
+
+    buferzonas.on("apply-edits", () => {
+        // Once edits are applied to the layer, remove the Editor from the UI
+        view.ui.remove(bzEditor);
+
+        // Iterate through the features
+        features.forEach((feature) => {
+            // Reset the template for the feature if it was edited
+            feature.popupTemplate = template;
+        });
+
+        // Open the popup again and reset its content after updates were made on the feature
+        if (features) {
+            view.popup.open({
+            features: features
+            });
+        }
+
+        // Cancel the workflow so that once edits are applied, a new popup can be displayed
+        bzEditor.viewModel.cancelWorkflow();
+    });
+
+    // view.ui.add("info", {
+    //     position: "top-left",
+    //     index: 1
+    // });
 
     // Add sketch widget
     const graphicsLayerSketch = new GraphicsLayer();
@@ -164,8 +548,72 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
         creationMode: "update" // Auto-select
     });
 
-    view.ui.add(sketch, "top-right");
+    // function to show/hide sketch widget and buttons
+    const applySwitch = function(){
+        const specialais = document.getElementById("specialais");
+        const parasts = document.getElementById("parasts");
+        const buttonDiv = document.getElementById("buttonDiv");
+        if (zimetBuferzonu === true){
+            if(!view.ui.find(sketch.id)){
+                view.ui.add(sketch, "top-right"); 
+            }
+            if (!specialais.classList.contains("sstrong")){
+                specialais.classList.add("sstrong");
+            }
+            if (parasts.classList.contains("sstrong")){
+                parasts.classList.remove("sstrong");
+            }
+            if(view.ui.find(pointEditorExpand.id)){
+                view.ui.remove(pointEditorExpand);
+            }
+            buttonDiv.style = "display:block";
+        
+        } else {
+            document.getElementById("virsraksts1").innerHTML = ":)";
+            if(view.ui.find(sketch.id)){
+                view.ui.remove(sketch);
+            }
+            if (specialais.classList.contains("sstrong")){
+                specialais.classList.remove("sstrong");
+            }
+            if (!parasts.classList.contains("sstrong")){
+                parasts.classList.add("sstrong");
+            }
+            if(!view.ui.find(pointEditorExpand.id)){
+                view.ui.add(pointEditorExpand, "top-left");
+            }
+            buttonDiv.style = "display:none";            
+        }
+
+    }
     
+    // ADD shape usin button
+    const bzMarkButton = document.getElementById("bzMarkButton");
+    const markShape = function() {
+        if (polygonsToJoin.length === 1 && polygonsToJoin[0].type === "polygon"){
+            const bufSymbol = {
+                type: "simple-fill", // autocasts as new SimpleFillSymbol()
+                color: [227, 139, 79, 0.2],
+                outline: {
+                    // autocasts as new SimpleLineSymbol()
+                    color: [0, 255, 0],
+                    width: 4
+                }
+            };
+            mainDrawingLayer.add(
+                new Graphic({
+                    geometry: polygonsToJoin[0],
+                    symbol: bufSymbol
+                })
+            );
+            array = [];
+            saveButton.addEventListener("click", applyEditsToBzLayer);
+        } else {
+            console.log("something wrong with the polygon. There should be only one");
+
+        }
+    };
+
     //JOIN shapes using button
     const joinButton = document.getElementById("joinButton");
     const joinShapesEnable = function(array){
@@ -175,11 +623,11 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
                     array = [];
                     const bufSymbol = {
                         type: "simple-fill", // autocasts as new SimpleFillSymbol()
-                        color: [227, 139, 79, 0.8],
+                        color: [227, 139, 79, 0.2],
                         outline: {
                           // autocasts as new SimpleLineSymbol()
                           color: [0, 255, 0],
-                          width: 6
+                          width: 4
                         }
                     };
                     mainDrawingLayer.add(
@@ -188,7 +636,7 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
                           symbol: bufSymbol
                         })
                     );
-
+                    saveButton.addEventListener("click", applyEditsToBzLayer);
                 }).catch((e)=>{
                     console.log(e);
                 });
@@ -203,95 +651,46 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
         //console.log(event.state);
         // Create
         if (event.state === "start") {
-            //queryFeaturelayer(event.graphics[0].geometry);
-            //console.log(graphicsLayerSketch.graphics);
-            let polygonsToJoin = [];
+            polygonsToJoin = [];
             event.graphics.forEach((gr)=>{
                 //console.log(gr.geometry.rings[0][0]);
                 if (gr.geometry.type === "polygon"){
                     polygonsToJoin.push(gr.geometry);
                 }
             });
+            if (polygonsToJoin.length === 1){
+                bzMarkButton.addEventListener("click", markShape);
+                saveButton.removeEventListener("click", applyEditsToBzLayer);
+            }
             if (polygonsToJoin.length > 1){
                 joinShapesEnable(polygonsToJoin);
+                saveButton.removeEventListener("click", applyEditsToBzLayer);
             }
         }
         if (event.state === "complete"){
-            //graphicsLayerSketch.remove(event.graphics[0]); // Clear the graphic when a user clicks off of it or sketches new one
             console.log("completed");
-            //event.graphics = [];
-        }
-        // Change
-        if (event.toolEventInfo && (event.toolEventInfo.type === "scale-stop" || event.toolEventInfo.type === "reshape-stop" || event.toolEventInfo.type === "move-stop")) {
-            //queryFeaturelayer(event.graphics[0].geometry);
-            //console.log(graphicsLayerSketch.graphics);
-            //console.log(event);
-        }
-        //graphicsLayerSketch.graphics.forEach(function(item){
-            // Do something here to each graphic like calculate area of its geometry
-           // console.log(item.geometry.type);
-            //console.log(item.geometry.rings);
-         // });       
+            bzMarkButton.removeEventListener("click", markShape);
+            polygonsToJoin = [];
+        }    
     });
 
-
-    // function queryFeaturelayer(geometry) {
-
-    //     const parcelQuery = {
-    //      spatialRelationship: "intersects", // Relationship operation to apply
-    //      geometry: geometry,  // The sketch feature geometry
-    //      outFields: ["VKUR_TIPS", "NOSAUKUMS","SORT_NOS"], // Attributes to return
-    //      returnGeometry: true
-    //     };
-
-    //     ekas.queryFeatures(parcelQuery)
-    //     .then((results) => {
-    //         console.log(results);
-    //        displayResults(results);
-    
-    //     }).catch((error) => {
-    //       console.log(error);
-    //     });
-    // }
-    // Show features (graphics)
-    // function displayResults(results) {
-
-    //     // Create a blue polygon
-    //     const symbol = {
-    //         type: "simple-marker",
-    //         color: [20, 130, 200],
-    //         outline: {
-    //         color: "white",
-    //         width: 1
-    //         },
-    //     };
-
-    //     const popupTemplate = {
-    //         title: "{NOSAUKUMS}",
-    //         content: [{type: "fields", fieldInfos: [{fieldName: "NOSAUKUMS"}, {fieldName: "SORT_NOS"}, {fieldName: "VKUR_TIPS"}]}]
-    //     };      
             
-    //     // Set symbol and popup
-    //     results.features.map((feature) => {
-    //         feature.symbol = symbol;
-    //         feature.popupTemplate = popupTemplate;
-    //         return feature;
-    //     });
-    //         // Clear display
-    //     view.popup.close();
-    //     view.graphics.removeAll();
-    //         // Add features to graphics layer
-    //     view.graphics.addMany(results.features);   
-    // }
+    function applyEditsToBzLayer (){
+        const edits = {addFeatures: mainDrawingLayer.graphics};
+        buferzonas.applyEdits(edits)
+        .then((results)=>{
+            //console.log(results);
+            const t = document.getElementById("virsraksts1");
+            if (results.addFeatureResults.length > 0) {
+                t.innerHTML = `Pievienoto buferzonu skaits: ${results.addFeatureResults.length}`
+            } else {t.innerHTML = `Nekas nav pievienots`}     
+        })
+        .catch((e)=>{
+            console.log(e);
+        })
+    }
+
 
 });
 
-
-// TODOS
-// Editor widget - pārbaudēm vai applyEdits
-// Sketch vidget - buferzonai
-// UNION
-// Vēl viens slānis - pārbaudēm
-// geometryService.union() apvieno feature, kas ir publicētā servisā
-//geometryEngineAsync 
-//geometryEngine
+// Featuretable
