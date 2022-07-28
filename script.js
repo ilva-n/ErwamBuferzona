@@ -12,20 +12,23 @@ require(["esri/config",
 "esri/widgets/Editor",
 "esri/widgets/Expand",
 "esri/widgets/FeatureTable"], 
-function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerList, 
+function (esriConfig, Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerList, 
     CoordinateConversion, Measurement, geometryEngineAsync, Graphic, Editor, Expand, FeatureTable) {
     
     esriConfig.apiKey = "AAPKc6d3103f93ba45899206b019b686405bSdAz10q6A7j-RFC6kl6u4Uor2ADR2Nf5ytv-jRE0mGW9W9zP5UscUzYTL28efgHv";
+    
     let zimetBuferzonu = false;
     let polygonsToJoin = [];
-    const bufSwitch = document.getElementById("bufSwitch");
-    bufSwitch.addEventListener("change", ()=>{
-        zimetBuferzonu === true ? zimetBuferzonu = false : zimetBuferzonu = true;
-        applySwitch();
-    });
+    let bzEditor, features, pointEditorExpand;
 
+    const layerListContainer = document.getElementById("layerListContainer");
+    const measureDiv = document.getElementById("measureDiv");
+    const bufSwitch = document.getElementById("bufSwitch");
     const saveButton = document.getElementById("saveButton");
     const pasleptMeritajuButton = document.getElementById("pasleptMeritaju");
+    const joinButton = document.getElementById("joinButton");
+    
+    // Labels mājām un mazciemiem
     const labelClass = {
         // autocasts as new LabelClass()
         symbol: {
@@ -44,13 +47,15 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
         }
     };
 
+    //for bzEditor which appears inside of popup
     const editThisAction = {
         title: "Labot šo buferzonu",
         id: "edit-this",
         className: "esri-icon-edit"
     };
-       // Create a popupTemplate for the featurelayer and pass in a function to set its content and specify an action to handle editing the selected feature
-    
+       
+    // Create a popupTemplate for the for buferzonas layer and pass in a function 
+    //to set its content and specify an action to handle editing the selected feature
     const template = {
         title: "Buferzona",
         content: [
@@ -72,6 +77,7 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
         actions: [editThisAction]
     };
 
+    //popup template apsekojumu slānim
     const apsTemplate = {
         title: "Apsekojums",
         content: [
@@ -95,6 +101,7 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
           ],
     };
 
+    //popup template paraugu slānim
     const parTemplate = {
         title: "Pozitīvais paraugs",
         content: [
@@ -118,9 +125,48 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
           ],
     };
 
-    let bzEditor, features, pointEditorExpand, tableExpand;
-    const layerListContainer = document.getElementById("layerListContainer");
-    const measureDiv = document.getElementById("measureDiv");
+    // renderer for buferzonas layer
+    const bzRenderer = {
+      type: "simple",  // autocasts as new SimpleRenderer()
+      symbol: {
+        type: "simple-fill",  // autocasts as new SimpleFillSymbol()
+        color: [ 255, 128, 0, 0.2 ],
+        outline: {  // autocasts as new SimpleLineSymbol()
+          width: 2,
+          color: "red"
+        }
+      }
+    };
+
+    // renderer for apsekojumi layer
+    const apsRenderer = {
+      type: "simple",  // autocasts as new SimpleRenderer()
+      symbol: {
+        type: "simple-marker",  // autocasts as new SimpleMarkerSymbol()
+        size: 7,
+        color: "blue",
+        outline: {  // autocasts as new SimpleLineSymbol()
+          width: 1,
+          color: "white"
+        }
+      },
+      label: "apsekojums"
+    };
+    
+    //renderer for paraugi layer
+    const parRenderer = {
+      type: "simple",  // autocasts as new SimpleRenderer()
+      symbol: {
+        type: "simple-marker",  // autocasts as new SimpleMarkerSymbol()
+        size: 7,
+        color: "red",
+        outline: {  // autocasts as new SimpleLineSymbol()
+          width: 1,
+          color: "black"
+        }
+      },
+      label: "paraugs"
+    };       
 
     //LAYERS
     const ekas = new FeatureLayer({
@@ -165,39 +211,12 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
         visible: false
     });
 
-    // styles for buferzonas layer
-    const bzRenderer = {
-        type: "simple",  // autocasts as new SimpleRenderer()
-        symbol: {
-          type: "simple-fill",  // autocasts as new SimpleFillSymbol()
-          color: [ 255, 128, 0, 0.2 ],
-          outline: {  // autocasts as new SimpleLineSymbol()
-            width: 2,
-            color: "red"
-          }
-        }
-    };
     const buferzonas = new FeatureLayer({
         url: "https://services1.arcgis.com/3dWrAGXGF8L1iW48/arcgis/rest/services/buferzonas/FeatureServer/0",
         renderer: bzRenderer,
         outFields: ["*"],
         popupTemplate: template
     });
-
-    // apsekojumi 
-    const apsRenderer = {
-        type: "simple",  // autocasts as new SimpleRenderer()
-        symbol: {
-          type: "simple-marker",  // autocasts as new SimpleMarkerSymbol()
-          size: 7,
-          color: "blue",
-          outline: {  // autocasts as new SimpleLineSymbol()
-            width: 1,
-            color: "white"
-          }
-        },
-        label: "apsekojums"
-    };
 
     const apsekojumi = new FeatureLayer({
         url: "https://services1.arcgis.com/3dWrAGXGF8L1iW48/arcgis/rest/services/apsekojumiparaugi/FeatureServer/0",
@@ -206,21 +225,6 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
         popupTemplate: apsTemplate,
         title: "Apsekojumi"
     });
-
-    //paraugi
-    const parRenderer = {
-        type: "simple",  // autocasts as new SimpleRenderer()
-        symbol: {
-          type: "simple-marker",  // autocasts as new SimpleMarkerSymbol()
-          size: 7,
-          color: "red",
-          outline: {  // autocasts as new SimpleLineSymbol()
-            width: 1,
-            color: "black"
-          }
-        },
-        label: "paraugs"
-    };   
 
     const paraugi = new FeatureLayer({
         url: "https://services1.arcgis.com/3dWrAGXGF8L1iW48/arcgis/rest/services/apsekojumiparaugi/FeatureServer/1",
@@ -242,7 +246,7 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
     map.add(apsekojumi);
     map.add(paraugi);
 
-    // for survey/sample editor
+    // layerinfos for editor widget (apsekojumi)
     const apsInfos = {
         layer: apsekojumi,
         formTemplate: {
@@ -273,7 +277,7 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
           ]
         }
     };
-    
+    // layerinfos for editor widget (paraugi)
     const parInfos = {
         layer: paraugi,
         label: "pozitīvie paraugi",
@@ -326,135 +330,131 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
         container: measureDiv
     });
 
-    //view.ui.add(measurement, "bottom-right");
+    // Initial event listeners
     pasleptMeritajuButton.addEventListener("click", ()=>{
         if (measurement){
             measurement.clear()
         }
     });
 
+    bufSwitch.addEventListener("change", ()=>{
+      zimetBuferzonu === true ? zimetBuferzonu = false : zimetBuferzonu = true;
+      applySwitch();
+    });
+
     //funkcijas priekš LayerList
     function defineActions(event) {
-        // The event object contains an item property. 
-        // is is a ListItem referencing the associated layer
-        // and other properties. You can control the visibility of the
-        // item, its title, and actions using this object.
-
+        // The event object contains an item property.  It is is a ListItem referencing the associated layer
+        // and other properties. You can control the visibility of the item, its title, and actions using this object.
         const item = event.item;
-
         if (!item.title) {
-          // An array of objects defining actions to place in the LayerList.
-          // By making this array two-dimensional, you can separate similar
-          // actions into separate groups with a breaking line.
-        item.layer.listMode = "hide";
+          item.layer.listMode = "hide";
         }
     }
     
+    // HERE IS WHAT SHOULD HAPPEN WHEN view IS READY
     view.when(() => {
-        // Create the LayerList widget with the associated actions
-        // and add it to the top-right corner of the view.
-
+        // Create the LayerList widget with the associated actions and add it to the top-right corner of the view.
         const layerList = new LayerList({
           view: view,
           container: layerListContainer,
+          // To add widget to the top right corner of the view: view.ui.add(layerList, "manual");
           // executes for each ListItem in the LayerList
           listItemCreatedFunction: defineActions         
         });
 
         // Event listener that fires each time an action is triggered
-
         layerList.on("trigger-action", (event) =>  {
             // The layer visible in the view at the time of the trigger.
             event.item.visible ? event.item.visible = false : event.item.visible = true;
- 
         });
-
-          //console.log(layerList.operationalItems.items);
-          // Add widget to the top right corner of the view
-          //view.ui.add(layerList, "manual"); ja ir šis, tad vidžets ir virsū uz "view"
         
-        // Create the Editor with the specified layer and a list of field configurations
+        // Create the Editor for buferzonas layer
         bzEditor = new Editor({
-            view: view,
-            container: document.createElement("div"),
-            layerInfos: [{
-                view: view,
-                layer: buferzonas,                
-                formTemplate: { // autocasts to FormTemplate
-                    elements: [
-                    // autocasts to FieldElement
-                    {
-                        type: "field",
-                        fieldName: "Nosaukums",
-                        label: "Nosaukums"
-                    },
-                    {
-                        type: "field",
-                        fieldName: "gads",
-                        label: "gads"
-                    },
-                    {
-                        type: "field",
-                        fieldName: "OBJECTID",
-                        label: "id",
-                        editable: false
-                    }
-                    ]
-                },
-                addEnabled: false
-            }]
+          view: view,
+          container: document.createElement("div"),
+          layerInfos: [{
+              view: view,
+              layer: buferzonas,                
+              formTemplate: { // autocasts to FormTemplate
+                  elements: [
+                  // autocasts to FieldElement
+                  {
+                      type: "field",
+                      fieldName: "Nosaukums",
+                      label: "Nosaukums"
+                  },
+                  {
+                      type: "field",
+                      fieldName: "gads",
+                      label: "gads"
+                  },
+                  {
+                      type: "field",
+                      fieldName: "OBJECTID",
+                      label: "id",
+                      editable: false
+                  }
+                  ]
+              },
+              addEnabled: false
+          }]
         });
 
-
-          // Execute each time the "Edit feature" action is clicked
+        // Execute each time the "Edit feature" action is clicked
+        // šis ir tik sarežģīts, jo tam vajag iestādīties popup vietā
         function editThis() {
-            // If the EditorViewModel's activeWorkflow is null, make the popup not visible
-            if (!bzEditor.viewModel.activeWorkFlow) {
-                view.popup.visible = false;
-                // Call the Editor update feature edit workflow
-                bzEditor.startUpdateWorkflowAtFeatureEdit(view.popup.selectedFeature);
-                view.ui.add(bzEditor, "top-right");
-                view.popup.spinnerEnabled = false;
-            }
-            // We need to set a timeout to ensure the editor widget is fully rendered. We
-            // then grab it from the DOM stack
-            setTimeout(() => {
-                // Use the editor's back button as a way to cancel out of editing
-                const shadowLine1 = bzEditor.domNode.getElementsByTagName("calcite-panel")[1];
-                const root1 = shadowLine1.shadowRoot;
-                let backButtn = root1.querySelectorAll(".back-button")[0];
-                // Add a tooltip for the back button
-                backButtn.setAttribute(
-                    "title",
-                    "Cancel edits, return to popup"
-                );
-                // Add a listener to listen for when the editor's back button is clicked
-                backButtn.addEventListener("click", (evt) => {
-                    // Prevent the default behavior for the back button and instead remove the editor and reopen the popup
-                    evt.preventDefault();
-                    view.ui.remove(bzEditor);
-                    view.popup.open({
-                    features: features
-                    });
-                });        
-            }, 750); // ar isaku taimautu isti nepietiek
+          // If the EditorViewModel's activeWorkflow is null, make the popup not visible
+          // šī daļa palaiž Editor vidžetu
+          if (!bzEditor.viewModel.activeWorkFlow) {
+              view.popup.visible = false;
+              // Call the Editor update feature edit workflow
+              bzEditor.startUpdateWorkflowAtFeatureEdit(view.popup.selectedFeature);
+              view.ui.add(bzEditor, "top-right");
+              view.popup.spinnerEnabled = false;
+          }
+          // We need to set a timeout to ensure the editor widget is fully rendered. We
+          // then grab it from the DOM stack
+          // šī daļa ir, lai ar back pogu atgrieztos no Editora uz popup
+          setTimeout(() => {
+              // Use the editor's back button as a way to cancel out of editing
+              const shadowLine1 = bzEditor.domNode.getElementsByTagName("calcite-panel")[1];
+              const root1 = shadowLine1.shadowRoot;
+              let backButtn = root1.querySelectorAll(".back-button")[0];
+              // Add a tooltip for the back button
+              backButtn.setAttribute(
+                  "title",
+                  "Cancel edits, return to popup"
+              );
+              // Add a listener to listen for when the editor's back button is clicked
+              backButtn.addEventListener("click", (evt) => {
+                  // Prevent the default behavior for the back button and instead remove the editor and reopen the popup
+                  evt.preventDefault();
+                  view.ui.remove(bzEditor);
+                  view.popup.open({
+                  features: features
+                  });
+              });        
+          }, 750); // ar īsāku taimautu īsti nepietiek
         }
-
         
-        // Event handler that fires each time an action is clicked
+        // Event handler that fires each time "edit-this" action is clicked
         view.popup.on("trigger-action", (event) => {
             if (event.action.id === "edit-this") {
                 editThis();
             }
         });
 
+        // Editor vidžets apsekojumu un pozitīvo paraugu slāņiem. Ir atsevišķi, nevis ar izeju no popup. 
+        // Būs savāžams, tāpēc sēdēs iekš "Expand widget"
         const pointEditor = new Editor({
             container: document.createElement("div"),
             view: view,
             layerInfos: [apsInfos, parInfos, {layer: buferzonas, enabled: false}]
         });
 
-        // šo vajag paskatīties vai vajag. Varbūt var samierināties ar "New feature"
+        // šo vajag paskatīties vai vajag. Tas ir, lai rādītu nevis "New feature", bet "Jauns apsekojums", "Jauns pozitīvais paraugs"
+        // Varbūt var samierināties ar "New feature"
         pointEditor.viewModel.watch('state', function(state){
             if(state === 'ready'){
               setTimeout(function(){
@@ -464,8 +464,9 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
                 bb[1].lastChild.label = "Apsekojums"
               }, 700);
             }
-        }); // šei tā daļa beidzas
+        }); // ar mazāku timeout nepietiek
 
+        // Expand widget
         pointEditorExpand = new Expand({
             view: view,
             content: pointEditor
@@ -474,6 +475,7 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
         // Add the widget to the view
         view.ui.add(pointEditorExpand, "top-left");
 
+        //Tabulas apsekojumiem un paraugiem
         const featureTable1 = new FeatureTable({
             view: view, // The view property must be set for the select/highlight to work
             layer: paraugi,
@@ -498,6 +500,7 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
         document.getElementById("mainitTabulas").addEventListener("click", changeTables);
     });
     
+    //ŠIS VISS JOPOROJĀM IR, LAI DARBOTOS Editor form popup buferzonu slānim
     // Watch when the popup is visible
     view.popup.watch("visible", (event) => {
         // Check the Editor's viewModel state, if it is currently open and editing existing features, disable popups
@@ -528,14 +531,10 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
 
         // Cancel the workflow so that once edits are applied, a new popup can be displayed
         bzEditor.viewModel.cancelWorkflow();
-    });
+    }); // Te beidzas POPUP-EDITOR
 
-    // view.ui.add("info", {
-    //     position: "top-left",
-    //     index: 1
-    // });
-
-    // Add sketch widget
+    // Add sketch widget un tam piederīgās lietas
+    // Ar Sketch widget ir domāts zīmēt buferzonu apaļās kontūras
     const graphicsLayerSketch = new GraphicsLayer();
     map.add(graphicsLayerSketch);
 
@@ -548,7 +547,7 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
         creationMode: "update" // Auto-select
     });
 
-    // function to show/hide sketch widget and buttons
+    // function to show/hide sketch widget and buttons (in the DOM)
     const applySwitch = function(){
         const specialais = document.getElementById("specialais");
         const parasts = document.getElementById("parasts");
@@ -584,10 +583,9 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
             }
             buttonDiv.style = "display:none";            
         }
-
     }
     
-    // ADD shape usin button
+    // ADD one shape to the layer using button
     const bzMarkButton = document.getElementById("bzMarkButton");
     const markShape = function() {
         if (polygonsToJoin.length === 1 && polygonsToJoin[0].type === "polygon"){
@@ -615,7 +613,6 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
     };
 
     //JOIN shapes using button
-    const joinButton = document.getElementById("joinButton");
     const joinShapesEnable = function(array){
         joinButton.addEventListener("click", ()=>{
             if (array.length > 1){
@@ -646,7 +643,7 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
         });
     }
     
-    // Add sketch events to listen for and execute query
+    // Add sketch events to listen for
     sketch.on("update", (event) => {
         //console.log(event.state);
         // Create
@@ -674,7 +671,7 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
         }    
     });
 
-            
+    // ar "saglabāt" pogu pievienot buferzonas slānim sazīmēto buferzonu vai sazīmēto vairāku buferzonu apvienojumu        
     function applyEditsToBzLayer (){
         const edits = {addFeatures: mainDrawingLayer.graphics};
         buferzonas.applyEdits(edits)
@@ -689,8 +686,5 @@ function (esriConfig,Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLis
             console.log(e);
         })
     }
-
-
 });
 
-// Featuretable
