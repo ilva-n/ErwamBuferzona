@@ -237,7 +237,7 @@ function (esriConfig, Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLi
     //MAP
     const map = new Map({
       //basemap: "arcgis-imagery" // Basemap layer
-      basemap: "arcgis-topographic" ,
+      basemap: "gray-vector",
       layers: [ekas, mazciemi, autoceli, ielas, ciemi, pagasti, novadi]
     });
      
