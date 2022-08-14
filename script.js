@@ -19,7 +19,7 @@ function (esriConfig, Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLi
     
     let zimetBuferzonu = false;
     let polygonsToJoin = [];
-    let bzEditor, features, pointEditorExpand;
+    let bzEditor, features, pointEditorExpand, addPointExpand, newSurveyBox;
 
     const layerListContainer = document.getElementById("layerListContainer");
     const measureDiv = document.getElementById("measureDiv");
@@ -314,7 +314,7 @@ function (esriConfig, Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLi
     const view = new MapView({
         map: map,
         center: [24.399389, 56.902410], // Longitude, latitude 
-        zoom: 8, // Zoom level
+        zoom: 7, // Zoom level
         container: "viewDiv" // Div element
     });
     //COORDINATE WIDGET
@@ -351,6 +351,178 @@ function (esriConfig, Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLi
           item.layer.listMode = "hide";
         }
     }
+    //Apsekojumu pievadīšanai ar roku
+    // paslept ailes
+    const pasleptAiles = function(){
+      document.getElementById("x_aile").style = "display:none";
+      document.getElementById("y_aile").style = "display:none";
+      document.getElementById("aktaNrInput").style = "display:none";
+      document.getElementById("inspInput").style = "display:none";
+      document.getElementById("gadsInput").style = "display:none";
+      document.getElementById("gadsInput").style = "display:none";
+      document.getElementById("iesniegtPoga").style = "display:none";
+      document.getElementById("atpakalPoga").style = "display:block";
+    }
+
+    // paslept ailes
+    const paraditAiles = function(){
+      document.getElementById("h44").textContent = "Pievieno apsekojumu ierakstot koordinātes!"
+      document.getElementById("x_aile").style = "display:block";
+      document.getElementById("y_aile").style = "display:block";
+      document.getElementById("aktaNrInput").style = "display:block";
+      document.getElementById("inspInput").style = "display:block";
+      document.getElementById("gadsInput").style = "display:block";
+      document.getElementById("gadsInput").style = "display:block";
+      document.getElementById("iesniegtPoga").style = "display:block";
+      document.getElementById("atpakalPoga").style = "display:none";
+    }
+
+    const notiritAiles = function() {
+      document.getElementById("x_aile").value = "";
+      document.getElementById("y_aile").value = "";
+      document.getElementById("aktaNrInput").value = "";
+      document.getElementById("inspInput").value = "";
+      document.getElementById("gadsInput").value = "";
+    }
+
+    //nolasīt ailes
+    const createNewFeatureObj = function() {
+      const obj = {};
+      const lonText = document.getElementById("x_aile").value;
+      const latText = document.getElementById("y_aile").value;
+      obj.xkoord = parseFloat(lonText.replace(/,/g, '.'));
+      obj.ykoord = parseFloat(latText.replace(/,/g, '.'));
+      obj.attributes = {};
+      obj.attributes.aktanr = document.getElementById("aktaNrInput").value;
+      obj.attributes.inspektors = document.getElementById("inspInput").value;
+      obj.attributes.gads = Number(document.getElementById("gadsInput").value);
+      return obj;
+    }
+    
+      // izveidot jaunu Feature (new Graphic)
+    const createNewFeature1 = function(obj){
+      const point = {
+          type: "point",
+          x: obj.xkoord,
+          y: obj.ykoord,
+          spatialReference: { wkid:4326 }
+        };
+
+      const jaunsPunkts = new Graphic({
+          geometry: point,
+          attributes: obj.attributes
+        });
+      return jaunsPunkts;
+    };
+
+    const izvPievienLaucinu = function(){
+      newSurveyBox = document.createElement("div");
+      newSurveyBox.classList.add("jaunsPunkts");
+      //appned title
+      const h44 = document.createElement("h4");
+      h44.textContent = "Pievieno apsekojumu ierakstot koordinātes!";
+      h44.setAttribute("id", "h44");
+      newSurveyBox.appendChild(h44);
+      //append x label and input box
+      const lonLabel = document.createElement("label");
+      lonLabel.textContent = "lon_(x): ";
+      newSurveyBox.appendChild(lonLabel);
+      const inputLon = document.createElement("input");
+      inputLon.type = "text";
+      inputLon.setAttribute("id", "x_aile");
+      newSurveyBox.appendChild(inputLon);
+      //create break
+      const br1 = document.createElement("br");
+      newSurveyBox.appendChild(br1);
+      //append y label and input box
+      const latLabel = document.createElement("label");
+      latLabel.textContent = "lat_(y): "; 
+      newSurveyBox.appendChild(latLabel);     
+      const inputLat = document.createElement("input");
+      inputLat.type = "text";
+      inputLat.setAttribute("id", "y_aile");
+      newSurveyBox.appendChild(inputLat);
+      // break
+      const br2 = document.createElement("br");
+      newSurveyBox.appendChild(br2);
+      // append akta Nr label and box
+      const aktsLabel = document.createElement("label");
+      aktsLabel.textContent = "Akta Nr: "; 
+      newSurveyBox.appendChild(aktsLabel);     
+      const inputAkts = document.createElement("input");
+      inputAkts.type = "text";
+      inputAkts.setAttribute("id", "aktaNrInput");
+      newSurveyBox.appendChild(inputAkts);
+      // break
+      const br3 = document.createElement("br");
+      newSurveyBox.appendChild(br3);
+      //apped inspector name label and box           
+      const inspektorsLabel = document.createElement("label");
+      inspektorsLabel.textContent = "Inspektors: "; 
+      newSurveyBox.appendChild(inspektorsLabel);     
+      const inputInsp = document.createElement("input");
+      inputInsp.type = "text";
+      inputInsp.setAttribute("id", "inspInput");
+      newSurveyBox.appendChild(inputInsp);
+      // break
+      const br4 = document.createElement("br");
+      newSurveyBox.appendChild(br4);
+      //apped year label and box           
+      const gadsLabel = document.createElement("label");
+      gadsLabel.textContent = "Gads: "; 
+      newSurveyBox.appendChild(gadsLabel);     
+      const inputGads = document.createElement("input");
+      inputGads.type = "text";
+      inputGads.setAttribute("id", "gadsInput");
+      newSurveyBox.appendChild(inputGads);
+      // break
+      const br5 = document.createElement("br");
+      newSurveyBox.appendChild(br5);
+      // add submit button
+      const iesniegtPoga = document.createElement("button");
+      iesniegtPoga.type = "button";
+      iesniegtPoga.textContent = "Saglabāt";
+      iesniegtPoga.setAttribute("id", "iesniegtPoga");
+      newSurveyBox.appendChild(iesniegtPoga);
+      // add atcelt button
+      const atpakalPoga = document.createElement("button");
+      atpakalPoga.type = "button";
+      atpakalPoga.textContent = "Atpakal";
+      atpakalPoga.setAttribute("id", "atpakalPoga");
+      atpakalPoga.style = "display:none"; // "display:block"
+      newSurveyBox.appendChild(atpakalPoga);
+      atpakalPoga.addEventListener("click", () =>{
+        paraditAiles();
+      });
+
+      // event listener for submit button
+      iesniegtPoga.addEventListener("click", ()=>{
+        const newApsObj = createNewFeatureObj();
+        console.log(newApsObj);
+        const tekstaVieta = document.getElementById("h44");
+        if(!newApsObj.xkoord || !newApsObj.ykoord){
+          notiritAiles();
+          pasleptAiles();
+          tekstaVieta.textContent = "Lai pievienotu jaunu punktu, jābūt abām koordinātēm";
+        } else {
+          const newApsPoint = createNewFeature1(newApsObj);
+          const edits = {
+            addFeatures: [newApsPoint]
+          };
+          apsekojumi.applyEdits(edits).then((edresult) =>{
+            notiritAiles();
+            pasleptAiles();
+            if (edresult.addFeatureResults[0].error) {
+              tekstaVieta.textContent = `Pievienošana neizdevās: ${edresult.addFeatureResults[0].error.name}: ${edresult.addFeatureResults[0].error.message}`;
+            } else {
+              tekstaVieta.textContent = `Pievienots jauns apsekojums ar OBJECTID ${edresult.addFeatureResults[0].objectId}`;
+              console.log(edresult.addFeatureResults[0]);
+            }
+          });
+        }
+      });
+    }
+
     
     // HERE IS WHAT SHOULD HAPPEN WHEN view IS READY
     view.when(() => {
@@ -471,8 +643,21 @@ function (esriConfig, Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLi
             view: view,
             content: pointEditor
         });
+        
+        //izveidot labošanas formiņu
+        izvPievienLaucinu();
+
+      
+        // 2nd Expand widget
+        addPointExpand = new Expand({
+          expandIconClass: "esri-icon-applications",
+          view: view,
+          content: newSurveyBox
+        });
+
           
         // Add the widget to the view
+        view.ui.add(addPointExpand, "top-left");
         view.ui.add(pointEditorExpand, "top-left");
 
         //Tabulas apsekojumiem un paraugiem
