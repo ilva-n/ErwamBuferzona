@@ -19,7 +19,7 @@ function (esriConfig, Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLi
     
     let zimetBuferzonu = false;
     let polygonsToJoin = [];
-    let bzEditor, features, pointEditorExpand, addPointExpand, newSurveyBox;
+    let bzEditor, features, measurement, pointEditorExpand, addPointExpand, newSurveyBox;
 
     const layerListContainer = document.getElementById("layerListContainer");
     const measureDiv = document.getElementById("measureDiv");
@@ -238,7 +238,7 @@ function (esriConfig, Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLi
     const map = new Map({
       //basemap: "arcgis-imagery" // Basemap layer
       basemap: "gray-vector",
-      layers: [ekas, mazciemi, autoceli, ielas, ciemi, pagasti, novadi]
+      layers: [ekas, mazciemi, autoceli, pagasti] // ielas, ciemi, novadi
     });
      
     // add buferzonas layer
@@ -324,13 +324,13 @@ function (esriConfig, Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLi
     view.ui.add(ccWidget, "bottom-left");
     
     //MEASUREMENT WIDGET
-    const measurement = new Measurement({
-        view: view,
-        activeTool: "distance",
-        container: measureDiv
-    });
+    // const measurement = new Measurement({
+    //     view: view,
+    //     activeTool: "distance",
+    //     container: measureDiv
+    // });
 
-    // Initial event listeners
+    // novākt mērītājrīku
     pasleptMeritajuButton.addEventListener("click", ()=>{
         if (measurement){
             measurement.clear()
@@ -751,6 +751,12 @@ function (esriConfig, Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLi
                 view.ui.remove(pointEditorExpand);
             }
             buttonDiv.style = "display:block";
+                //MEASUREMENT WIDGET
+              measurement = new Measurement({
+              view: view,
+              activeTool: "distance",
+              container: measureDiv
+            });
         
         } else {
             document.getElementById("virsraksts1").innerHTML = ":)";
@@ -766,8 +772,11 @@ function (esriConfig, Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLi
             if(!view.ui.find(pointEditorExpand.id)){
                 view.ui.add(pointEditorExpand, "top-left");
             }
-            buttonDiv.style = "display:none";            
-        }
+            buttonDiv.style = "display:none";   
+            if (measurement){
+                measurement.clear()
+            }
+          }
     }
     
     // ADD one shape to the layer using button
