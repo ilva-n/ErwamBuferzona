@@ -1,3 +1,4 @@
+let LLL;
 require(["esri/config", 
 "esri/Map", 
 "esri/views/MapView", 
@@ -138,21 +139,94 @@ function (esriConfig, Map, MapView, Sketch, GraphicsLayer, FeatureLayer, LayerLi
       }
     };
 
-    // renderer for apsekojumi layer
-    const apsRenderer = {
-      type: "simple",  // autocasts as new SimpleRenderer()
-      symbol: {
-        type: "simple-marker",  // autocasts as new SimpleMarkerSymbol()
-        size: 7,
-        color: "blue",
-        outline: {  // autocasts as new SimpleLineSymbol()
+    // // renderer for apsekojumi layer - simpleRenderer - visi apsekojumi vienadi
+    // const apsRenderer = {
+    //   type: "simple",  // autocasts as new SimpleRenderer()
+    //   symbol: {
+    //     type: "simple-marker",  // autocasts as new SimpleMarkerSymbol()
+    //     size: 7,
+    //     color: "blue",
+    //     outline: {  // autocasts as new SimpleLineSymbol()
+    //       width: 1,
+    //       color: "white"
+    //     }
+    //   },
+    //   label: "apsekojums"
+    // };
+    
+    /*
+    // Šo var lietot, ja vēlas atšķirīgas krāsas pa gadiem
+     let apsRenderer = {
+      type: "unique-value",  // autocasts as new UniqueValueRenderer()
+      field: "gads",
+      defaultSymbol: { 
+        type: "simple-marker", 
+        size: 7, 
+        color: "gray",
+        outline: {
           width: 1,
           color: "white"
+        }         
+      },  // autocasts as new SimpleMarkerSymbol()
+      uniqueValueInfos: [{
+        // All features with value of "North" will be blue
+        value: 2021,
+        symbol: {
+          type: "simple-marker",  // autocasts as new SimpleFillSymbol()
+          size: 7,
+          color: "blue",
+          outline: {
+            width: 1,
+            color: "white"
+          }
         }
-      },
-      label: "apsekojums"
+      }, {
+        value: 2022,
+        symbol: {
+          type: "simple-marker",  // autocasts as new SimpleFillSymbol()
+          size: 7,
+          color: "green",
+          outline: {
+            width: 1,
+            color: "white"
+          }
+        }
+      }]
+    }; */   
+
+    // UniqueValueRenderer with valueExpression  ar nosacījumiem
+    // valueExpression is: when([expr1, result1, ...exprN, resultN], default) $feature
+    const dateObj = new Date();
+    const thisYearMinusTwo = dateObj.getFullYear() - 2;
+    let apsRenderer = {
+      type: "unique-value",  // autocasts as new UniqueValueRenderer()
+      valueExpression: `When($feature.gads >= ${thisYearMinusTwo}, 'new', 'other')`,
+      uniqueValueInfos: [{
+          value: "new",
+          symbol: {
+            type: "simple-marker",  // autocasts as new SimpleFillSymbol()
+            size: 7,
+            color: "blue",
+            outline: {
+              width: 1,
+              color: "white"
+            }
+          }
+          }, {
+          value: "other",
+          symbol: {
+            type: "simple-marker",  // autocasts as new SimpleFillSymbol()
+            size: 7,
+            color: "gray",
+            outline: {
+              width: 1,
+              color: "white"
+            }
+          }
+        }]
     };
-    
+  
+
     //renderer for paraugi layer
     const parRenderer = {
       type: "simple",  // autocasts as new SimpleRenderer()
